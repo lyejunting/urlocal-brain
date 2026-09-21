@@ -1,4 +1,5 @@
 from transformers import AutoTokenizer, AutoModelForMaskedLM
+import torch
 
 MODEL_NAME = "google-bert/bert-base-uncased"
 
@@ -17,7 +18,16 @@ mask_token_index = (
 
 mask_logits = outputs.logits[0, mask_token_index, :]
 
-top_tokens = mask_logits.topk(5, dim=1).indices[0]
+probabilities = torch.softmax(mask_logits, dim=-1)
+
+top = probabilities.topk(5, dim=1)
+
+top_probs = top.values[0]
+top_token_ids = top.indices[0]
+
+for token_id, probability in zip(top_token_ids, top_probs):
+    token = tokenizer.decode(token_id)
+    print(f"{token}: {probability.item():.4f}")
 
 for token_id in top_tokens:
     print(tokenizer.decode(token_id))
